@@ -1,6 +1,10 @@
 package com.example.springfile.service.impl;
 
 import com.example.springfile.service.PdfServiec;
+import com.itextpdf.text.Document;
+import com.itextpdf.text.DocumentException;
+import com.itextpdf.text.Paragraph;
+import com.itextpdf.text.pdf.PdfWriter;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
@@ -13,6 +17,8 @@ import org.springframework.stereotype.Service;
 
 import org.springframework.http.HttpHeaders;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 
 @Service
@@ -20,43 +26,22 @@ public class PdfServiceImpl implements PdfServiec {
 
     @Override
     public Object export() {
-        // tạo mới một đối tượng PD document
-        PDDocument document = new PDDocument();
-        PDPage page = new PDPage();
+        Document document = new Document();
+        ByteArrayOutputStream pdfStream = new ByteArrayOutputStream();
 
-        // tạo một trang mới
-        document.addPage(page);
-        File tempFile = null;
         try {
-            // tao một đói tượng PDPageContentStream để viết nội dung vào trang
-            PDPageContentStream contentStream = new PDPageContentStream(document, page);
+            PdfWriter.getInstance(document, pdfStream);
+            document.open();
 
-            // thêm văn bản vào trang
-            contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.TIMES_ROMAN), 22);
-            contentStream.beginText();
-            contentStream.newLineAtOffset(100, 700); // vij trí bắt đầu của văn bản
-            contentStream.showText("hello, this is pham son who sleeping ");
-            contentStream.endText();
+            // Add content to the PDF
+            document.add(new Paragraph("Hello, this is a sample PDF!"));
 
-            // kết thúc và đóng tài liệu
-            contentStream.close();
-            tempFile = File.createTempFile("hello", ".pdf");
-            document.close();
-
-            HttpHeaders headers = new HttpHeaders();
-            headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=hello.pdf");
-            headers.add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_PDF_VALUE);
-
-            return ResponseEntity
-                    .ok()
-                    .headers(headers)
-                    .body(new FileSystemResource(tempFile));
-
-        } catch (Exception e) {
+        } catch (DocumentException e) {
             e.printStackTrace();
-            return ResponseEntity.badRequest().build();
+        } finally {
+            document.close();
         }
 
-
+        return new ByteArrayInputStream(pdfStream.toByteArray());
     }
 }
